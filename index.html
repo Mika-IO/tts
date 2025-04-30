@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TTS Playground</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-6">
+  <div class="w-full max-w-2xl space-y-6">
+    <h1 class="text-3xl font-bold text-center text-orange-400">Text To Speak</h1>
+
+    <textarea id="textInput" rows="5" placeholder="Type your text here..."
+      class="w-full p-4 rounded-lg bg-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
+
+    <!-- Filter -->
+    <label class="block text-sm text-gray-300">Filter voices (e.g. pt-BR, en-US):</label>
+    <input id="voiceFilter" type="text" placeholder="Type to filter..."
+      class="w-full p-3 mb-3 rounded bg-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+
+    <!-- Select -->
+    <label for="voiceSelect" class="block text-sm text-gray-300">Choose a voice:</label>
+    <select id="voiceSelect"
+      class="w-full p-3 rounded bg-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"></select>
+
+    <!-- Buttons -->
+    <div class="flex gap-4">
+      <button id="speakBtn"
+        class="flex-1 py-2 bg-orange-500 hover:bg-orange-600 rounded font-semibold">🔊 Speak</button>
+      <button id="stopBtn"
+        class="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold">🔇 Stop</button>
+    </div>
+  </div>
+
+  <script>
+    const textInput   = document.getElementById('textInput');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const voiceFilter = document.getElementById('voiceFilter');
+    const speakBtn    = document.getElementById('speakBtn');
+    const stopBtn     = document.getElementById('stopBtn');
+
+    let allVoices = [];
+
+    // Preenche o <select> conforme o filtro
+    function populateVoices(filter = '') {
+      const filterLC = filter.toLowerCase();
+      voiceSelect.innerHTML = '';
+      allVoices
+        .filter(v => v.lang.toLowerCase().includes(filterLC) ||
+                     v.name.toLowerCase().includes(filterLC))
+        .forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.voiceURI;                 // ID único
+          opt.textContent = `${v.name} (${v.lang})`;
+          voiceSelect.appendChild(opt);
+        });
+    }
+
+    // Primeira carga
+    function loadVoices() {
+      allVoices = window.speechSynthesis.getVoices();
+      populateVoices(voiceFilter.value);
+    }
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+
+    // Filtro dinâmico
+    voiceFilter.addEventListener('input', () => populateVoices(voiceFilter.value));
+
+    // Falar
+    function speak() {
+      window.speechSynthesis.cancel();   // garante parar antes
+      const utter = new SpeechSynthesisUtterance(textInput.value);
+      const chosen = allVoices.find(v => v.voiceURI === voiceSelect.value);
+      if (chosen) utter.voice = chosen;
+      window.speechSynthesis.speak(utter);
+    }
+
+    speakBtn.onclick = speak;
+    stopBtn.onclick  = () => window.speechSynthesis.cancel();
+  </script>
+</body>
+</html>
